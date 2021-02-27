@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-launchMonitor = cv2.imread('images/launch-monitor.jpg')
+launchMonitor = cv2.imread('images/launch-monitor-2.jpg')
 
 hsv = cv2.cvtColor(launchMonitor,cv2.COLOR_BGR2HSV)
 
