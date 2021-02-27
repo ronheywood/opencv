@@ -12,8 +12,15 @@ https://pjreddie.com/media/files/yolov3.weights
  wget https://pjreddie.com/media/files/yolov3.weights
 ```
 
-I haven't written a configure script yet - You'll need to configure python along with the opencv matplotlib and numpy packages
+I haven't written a configure script yet - You'll need to configure your machine for python, and install the pipenv dependencies
 
 ```
- py yolo-detection.py --image test-images/close-up-outdoor-address.png --config yolo.cfg --weights yolov3.weights --classes yolo-classes.tx
- ```
+pipenv install
+```
+
+The current most interesting implementation is the YOLO 
+object detection algorithm, and while I'm currently assuming any "Sports ball" detected will be a golf ball, I suspect that a constraint that no other sports ball should be used, will be acceptable to users.
+
+```
+ py yolo-detection.py --image test-images/close-up-outdoor-address.png
+```

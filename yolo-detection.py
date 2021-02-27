@@ -14,10 +14,13 @@ ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--image', required=True,
                 help = 'path to input image')
 ap.add_argument('-c', '--config', required=False,
+                default='yolo.cfg',
                 help = 'path to yolo config file, defaults to yolo.cgf')
 ap.add_argument('-w', '--weights', required=False,
+                default='yolov3.weights',
                 help = 'path to yolo pre-trained weights, defaults to yolov3.weights.')
 ap.add_argument('-cl', '--classes', required=False,
+                default = 'yolo-classes.txt',
                 help = 'path to text file containing class names, defaults to yolo-classes.txt')
 args = ap.parse_args()
 
@@ -48,15 +51,15 @@ Height, Width, channels = image.shape
 scale = 0.00392
 
 classes = None
-classes_file = 'yolo-classes.txt' if(args.classes is None) else args.classes
-weights_file = 'yolov3.weights' if(args.weights is None) else args.weights
-config_file = 'yolo.cfg' if(args.config is None) else args.config
-with open(classes_file, 'r') as f:
+
+weights_file = args.weights
+config_file = args.config
+with open(args.classes, 'r') as f:
     classes = [line.strip() for line in f.readlines()]
 
 COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
 
-net = cv2.dnn.readNet(weights_file, config_file)
+net = cv2.dnn.readNet(args.weights, args.config)
 
 blob = cv2.dnn.blobFromImage(image, scale, (416,416), (0,0,0), True, crop=False)
 
