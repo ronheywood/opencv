@@ -8,16 +8,17 @@
 import cv2
 import argparse
 import numpy as np
+import os
 
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--image', required=True,
                 help = 'path to input image')
-ap.add_argument('-c', '--config', required=True,
-                help = 'path to yolo config file')
-ap.add_argument('-w', '--weights', required=True,
-                help = 'path to yolo pre-trained weights')
-ap.add_argument('-cl', '--classes', required=True,
-                help = 'path to text file containing class names')
+ap.add_argument('-c', '--config', required=False,
+                help = 'path to yolo config file, defaults to yolo.cgf')
+ap.add_argument('-w', '--weights', required=False,
+                help = 'path to yolo pre-trained weights, defaults to yolov3.weights.')
+ap.add_argument('-cl', '--classes', required=False,
+                help = 'path to text file containing class names, defaults to yolo-classes.txt')
 args = ap.parse_args()
 
 
@@ -41,25 +42,21 @@ def draw_prediction(img, class_id, confidence, x, y, x_plus_w, y_plus_h):
 
     cv2.putText(img, label, (x-10,y_plus_h-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-    
 image = cv2.imread(args.image)
 Height, Width, channels = image.shape
-
-image = cv2.imread(args.image)
-if(Height > 400 or Width > 800):
-    image = cv2.resize(image,(800,400),interpolation = cv2.INTER_AREA)
-    Height, Width, channels = image.shape
 
 scale = 0.00392
 
 classes = None
-
-with open(args.classes, 'r') as f:
+classes_file = 'yolo-classes.txt' if(args.classes is None) else args.classes
+weights_file = 'yolov3.weights' if(args.weights is None) else args.weights
+config_file = 'yolo.cfg' if(args.config is None) else args.config
+with open(classes_file, 'r') as f:
     classes = [line.strip() for line in f.readlines()]
 
 COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
 
-net = cv2.dnn.readNet(args.weights, args.config)
+net = cv2.dnn.readNet(weights_file, config_file)
 
 blob = cv2.dnn.blobFromImage(image, scale, (416,416), (0,0,0), True, crop=False)
 
@@ -105,6 +102,11 @@ for i in indices:
 
 cv2.imshow("object detection", image)
 cv2.waitKey()
-    
-cv2.imwrite("object-detection.jpg", image)
+
+
+try:
+    os.stat('output')
+except:
+    os.mkdir('output')       
+cv2.imwrite("output/object-detection.jpg", image)
 cv2.destroyAllWindows()
