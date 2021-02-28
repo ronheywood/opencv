@@ -14,6 +14,8 @@ ap.add_argument("-v", "--video", type=str,
     help="path to input video file")
 ap.add_argument("-t", "--tracker", type=str, default="kcf",
     help="OpenCV object tracker type")
+ap.add_argument("-o", "--output", type=str, default=None,
+    help="Should the video capture write to an output file?")
 ap.add_argument('-c', '--config', required=False,
                 default='yolo.cfg',
                 help = 'path to yolo config file, defaults to yolo.cgf')
@@ -123,13 +125,17 @@ initBB = None
 # if a video path was not supplied, grab the reference to the web cam
 if not args.video:
     print("[INFO] starting video stream...")
-    vs = VideoStream(src=0).start()
+    vs = VideoStream(src=0,resolution=(480,640)).start()
     time.sleep(1.0)
 # otherwise, grab a reference to the video file
 else:
     vs = cv2.VideoCapture(args.video)
 # initialize the FPS throughput estimator
 fps = None
+
+# If output writing we will need to initialise thiw
+writer = None
+zeros = None
 
 # loop over frames from the video stream
 while True:
@@ -142,8 +148,14 @@ while True:
         break
     # resize the frame (so we can process it faster) and grab the
     # frame dimensions
-    #frame = imutils.resize(frame, width=800)
+    frame = imutils.resize(frame, width=800)
     (H, W) = frame.shape[:2]
+
+    if(args.output and writer is None):
+        # Define the codec and create VideoWriter object
+        fourcc = cv2.VideoWriter_fourcc(*"DIVX")
+        writer = cv2.VideoWriter(args.output + '.mp4',fourcc, 20.0, (W,H), True)
+        zeros = np.zeros((H, W), dtype="uint8")
 
     # check to see if we are currently tracking an object
     if initBB is not None:
@@ -179,6 +191,9 @@ while True:
 
     # show the output frame
     cv2.imshow("Frame", frame)
+    if(writer):
+        # write the output frame to file
+        writer.write(frame)
 
     key = cv2.waitKey(1) & 0xFF
     # if the 's' key is selected, we are going to "select" a bounding
@@ -203,6 +218,9 @@ if not args.video:
 # otherwise, release the file pointer
 else:
     vs.release()
+
+if(writer):
+    writer.release()
 
 # close all windows
 cv2.destroyAllWindows()
