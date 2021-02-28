@@ -82,31 +82,40 @@ def golf_ball_detection(image):
                 y = center_y - h / 2
                 class_ids.append(class_id)
                 confidences.append(float(confidence))
-                return(x, y, w, h)
+                return(round(x), round(y), round(w), round(h))
+    print("no golf ball detected")
+    return None
 
 # extract the OpenCV version info
 (major, minor) = cv2.__version__.split(".")[:2]
 # if we are using OpenCV 3.2 OR BEFORE, we can use a special factory
 # function to create our object tracker
 if int(major) == 3 and int(minor) < 3:
-    tracker = cv2.Tracker_create(args["tracker"].upper())
+    tracker = cv2.Tracker_create(args.tracker.upper())
 # otherwise, for OpenCV 3.3 OR NEWER, we need to explicity call the
 # approrpiate object tracker constructor:
 else:
     # initialize a dictionary that maps strings to their corresponding
     # OpenCV object tracker implementations
     OPENCV_OBJECT_TRACKERS = {
-        "csrt": cv2.TrackerCSRT_create,
-        "kcf": cv2.TrackerKCF_create,
-        "boosting": cv2.TrackerBoosting_create,
-        "mil": cv2.TrackerMIL_create,
-        "tld": cv2.TrackerTLD_create,
-        "medianflow": cv2.TrackerMedianFlow_create,
-        "mosse": cv2.TrackerMOSSE_create
+        "csrt": cv2.TrackerCSRT_create, # High tracking accuracy at the expense of FPS
+        "kcf": cv2.TrackerKCF_create, # Lower tracking accuracy for higher FPS
+        "mil": cv2.TrackerMIL_create
     }
+    if(hasattr(cv2,'cv2.TrackerMOSSE_create')):
+        OPENCV_OBJECT_TRACKERS["mosse"] = cv2.TrackerMOSSE_create
+    if(hasattr(cv2,'cv2.TrackerMIL_create')):
+        OPENCV_OBJECT_TRACKERS["mil"] = cv2.TrackerMIL_create
+    if(hasattr(cv2,'cv2.TrackerBoosting_create')):
+        OPENCV_OBJECT_TRACKERS["boosting"] = cv2.TrackerBoosting_create
+    if(hasattr(cv2,'cv2.TrackerTLD_create')):
+        OPENCV_OBJECT_TRACKERS["tld"] = cv2.TrackerTLD_create
+    if(hasattr(cv2,'cv2.TrackerMedianFlow_create')):
+        OPENCV_OBJECT_TRACKERS["medianflow"] = cv2.TrackerMedianFlow_create
     # grab the appropriate object tracker using our dictionary of
     # OpenCV object tracker objects
     tracker = OPENCV_OBJECT_TRACKERS[args.tracker]()
+    
 # initialize the bounding box coordinates of the object we are going
 # to track
 initBB = None
@@ -162,10 +171,11 @@ while True:
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
     else:
         initBB = golf_ball_detection(frame)
-        # start OpenCV object tracker using the supplied bounding box
-        # coordinates, then start the FPS throughput estimator as well
-        tracker.init(frame, initBB)
-        fps = FPS().start()
+        if(initBB):
+            # start OpenCV object tracker using the supplied bounding box
+            # coordinates, then start the FPS throughput estimator as well
+            tracker.init(frame, initBB)
+            fps = FPS().start()
 
     # show the output frame
     cv2.imshow("Frame", frame)
