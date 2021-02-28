@@ -76,56 +76,71 @@ class_ids = []
 
 # loop over the frames from the video stream
 while True:
-    # Read the next frame from the video stream and resize it
-    # (Testing with a static image for now)
-    frame = vs.read()
-    #frame = image
 
-	#frame = imutils.resize(frame, width=400)
-    scale = 0.00392 #The tutorial uses a scale of  1?
+    image = vs.read()
+    Height, Width, channels = image.shape
 
-    # if the frame dimensions are None, grab them
-    if W is None or H is None:
-        (H, W) = frame.shape[:2]
+    scale = 0.00392
 
-    
+    classes = None
 
-    # construct a blob from the frame, pass it through the network,
-    # obtain our output predictions, and initialize the list of
-    # bounding box rectangles
-    blob = cv2.dnn.blobFromImage(frame, scale, (W, H),
-        (104.0, 177.0, 123.0))
+    weights_file = args.weights
+    config_file = args.config
+    with open(args.classes, 'r') as f:
+        classes = [line.strip() for line in f.readlines()]
+
+    COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
+
+    net = cv2.dnn.readNet(args.weights, args.config)
+
+    blob = cv2.dnn.blobFromImage(image, scale, (416,416), (0,0,0), True, crop=False)
+
     net.setInput(blob)
 
-    # mean_subtract_from_channels = (104.0, 177.0, 123.0) #image yolo used (0,0,0)?
-    # swap_rbg_for_bgr = True
-    # blob = cv2.dnn.blobFromImage(frame, scale, (W,H), mean_subtract_from_channels, swap_rbg_for_bgr, crop=False)
-    # net.setInput(blob)
-    
-    #detections = net.forward(get_output_layers(net))
-    detections = net.forward(get_output_layers(net))
-    rects = []
-    # loop over the detections
-    for out in detections:
+    outs = net.forward(get_output_layers(net))
+
+    class_ids = []
+    confidences = []
+    boxes = []
+    conf_threshold = 0.3
+    nms_threshold = 0.4
+
+    for out in outs:
         for detection in out:
             scores = detection[5:]
             class_id = np.argmax(scores)
-            detect_confidence = scores[class_id]
-            if(classes[class_id] != 'person' and detect_confidence > args.confidence ):
-                box = detection[3:7] * np.array([W, H, W, H])
-                (startX, startY, endX, endY) = box.astype("int")
-                cv2.rectangle(frame, (startX, startY), (endX, endY),
-                    (0, 255, 0), 2)
-                print(f'detection {classes[class_id]} confidence {detect_confidence} box {box.astype("int")}')
+            confidence = scores[class_id]
+            
+            if confidence > conf_threshold:
+                print('Found ' + classes[class_id] +  ' with confidence ' + str(confidence))
+                center_x = int(detection[0] * Width)
+                center_y = int(detection[1] * Height)
+                w = int(detection[2] * Width)
+                h = int(detection[3] * Height)
+                x = center_x - w / 2
+                y = center_y - h / 2
+                class_ids.append(class_id)
+                confidences.append(float(confidence))
+                boxes.append([x, y, w, h])
 
-    # show the output frame
-    cv2.imshow("Frame", frame)
+
+    indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
+
+    for i in indices:
+        i = i[0]
+        box = boxes[i]
+        x = box[0]
+        y = box[1]
+        w = box[2]
+        h = box[3]
+        draw_prediction(image, class_ids[i], confidences[i], round(x), round(y), round(x+w), round(y+h))
+
+    cv2.imshow("Frame", image)
     key = cv2.waitKey(1) & 0xFF
     # if the `q` key was pressed, break from the loop
     if key == ord("q"):
         break
 
 # do a bit of cleanup
-cv2.waitKey()
 cv2.destroyAllWindows()
 vs.stop()
