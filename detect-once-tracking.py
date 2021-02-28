@@ -1,6 +1,7 @@
 # import the necessary packages
 from imutils.video import VideoStream
 from imutils.video import FPS
+import numpy as np
 import argparse
 import imutils
 import time
@@ -13,7 +14,75 @@ ap.add_argument("-v", "--video", type=str,
     help="path to input video file")
 ap.add_argument("-t", "--tracker", type=str, default="kcf",
     help="OpenCV object tracker type")
+ap.add_argument('-c', '--config', required=False,
+                default='yolo.cfg',
+                help = 'path to yolo config file, defaults to yolo.cgf')
+ap.add_argument('-w', '--weights', required=False,
+                default='yolov3.weights',
+                help = 'path to yolo pre-trained weights, defaults to yolov3.weights.')
+ap.add_argument('-cl', '--classes', required=False,
+                default = 'yolo-classes.txt',
+                help = 'path to text file containing class names, defaults to yolo-classes.txt')
+ap.add_argument('-cf', '--confidence', required=False,
+                default = 0.5,
+                help = 'confidence threshold for object detection, defaults to 0.5')
 args = ap.parse_args()
+
+
+def get_output_layers(net):
+    
+    layer_names = net.getLayerNames()
+    
+    output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+
+    return output_layers
+
+def golf_ball_detection(image):
+    print("Searching for a golf ball...")
+    Height, Width, channels = image.shape
+
+    scale = 0.00392
+
+    classes = None
+
+    weights_file = args.weights
+    config_file = args.config
+    with open(args.classes, 'r') as f:
+        classes = [line.strip() for line in f.readlines()]
+
+    COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
+
+    net = cv2.dnn.readNet(args.weights, args.config)
+
+    blob = cv2.dnn.blobFromImage(image, scale, (416,416), (0,0,0), True, crop=False)
+
+    net.setInput(blob)
+
+    outs = net.forward(get_output_layers(net))
+
+    class_ids = []
+    confidences = []
+    boxes = []
+    conf_threshold = 0.3
+    nms_threshold = 0.4
+
+    for out in outs:
+        for detection in out:
+            scores = detection[5:]
+            class_id = np.argmax(scores)
+            confidence = scores[class_id]
+            
+            if classes[class_id] == 'golf ball' and confidence > conf_threshold:
+                print('Found ' + classes[class_id] +  ' with confidence ' + str(confidence))
+                center_x = int(detection[0] * Width)
+                center_y = int(detection[1] * Height)
+                w = int(detection[2] * Width)
+                h = int(detection[3] * Height)
+                x = center_x - w / 2
+                y = center_y - h / 2
+                class_ids.append(class_id)
+                confidences.append(float(confidence))
+                return(x, y, w, h)
 
 # extract the OpenCV version info
 (major, minor) = cv2.__version__.split(".")[:2]
@@ -64,7 +133,7 @@ while True:
         break
     # resize the frame (so we can process it faster) and grab the
     # frame dimensions
-    frame = imutils.resize(frame, width=500)
+    #frame = imutils.resize(frame, width=800)
     (H, W) = frame.shape[:2]
 
     # check to see if we are currently tracking an object
@@ -91,6 +160,12 @@ while True:
             text = "{}: {}".format(k, v)
             cv2.putText(frame, text, (10, H - ((i * 20) + 20)),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+    else:
+        initBB = golf_ball_detection(frame)
+        # start OpenCV object tracker using the supplied bounding box
+        # coordinates, then start the FPS throughput estimator as well
+        tracker.init(frame, initBB)
+        fps = FPS().start()
 
     # show the output frame
     cv2.imshow("Frame", frame)
@@ -98,17 +173,19 @@ while True:
     key = cv2.waitKey(1) & 0xFF
     # if the 's' key is selected, we are going to "select" a bounding
     # box to track
-    if key == ord("s"):
-        # select the bounding box of the object we want to track (make
-        # sure you press ENTER or SPACE after selecting the ROI)
-        initBB = cv2.selectROI("Frame", frame, fromCenter=False,
-            showCrosshair=True)
-        # start OpenCV object tracker using the supplied bounding box
-        # coordinates, then start the FPS throughput estimator as well
-        tracker.init(frame, initBB)
-        fps = FPS().start()
+    # if key == ord("s"):
+    #     # select the bounding box of the object we want to track (make
+    #     # sure you press ENTER or SPACE after selecting the ROI)
+    #     initBB = cv2.selectROI("Frame", frame, fromCenter=False,
+    #         showCrosshair=True)
+    #     print(initBB)
+    #     # start OpenCV object tracker using the supplied bounding box
+    #     # coordinates, then start the FPS throughput estimator as well
+    #     tracker.init(frame, initBB)
+    #     fps = FPS().start()
+
     # if the `q` key was pressed, break from the loop
-    elif key == ord("q"):
+    if key == ord("q"):
         break
 # if we are using a webcam, release the pointer
 if not args.video:
