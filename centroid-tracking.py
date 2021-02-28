@@ -12,7 +12,8 @@ import os
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument('-v', '--video', required=True,
+ap.add_argument('-v', '--video', required=False,
+                default = 0,
                 help = 'path to a test video stream')
 ap.add_argument('-c', '--config', required=False,
                 default='yolo.cfg',
@@ -49,12 +50,6 @@ def draw_prediction(img, class_id, confidence, x, y, x_plus_w, y_plus_h):
 
     cv2.putText(img, label, (x-10,y_plus_h-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-# initialize our centroid tracker and frame dimensions
-ct = CentroidTracker()
-(H, W) = (None, None)  
-
-image = cv2.imread('test-images/putter-launch.png')
-
 # load our serialized model from disk
 print("[INFO] loading model...")
 
@@ -68,8 +63,15 @@ net = cv2.dnn.readNet(args.weights, args.config)
 
 # initialize the video stream and allow the camera sensor to warmup
 print("[INFO] starting video stream...")
-vs = VideoStream(src=0).start()
-time.sleep(2.0)
+#vs = VideoStream(args.video).start()
+if(args.video == 0):
+    vs = VideoStream(0)
+    time.sleep(2.0)
+else: 
+    vs = cv2.VideoCapture(args.video)
+    if not vs.isOpened():
+        print("Cannot open camera")
+        exit()
 
 #Limiting the console output to one object per category
 class_ids = []
@@ -77,7 +79,13 @@ class_ids = []
 # loop over the frames from the video stream
 while True:
 
-    image = vs.read()
+    if(args.video == 0):
+        image = vs.read()
+    else:
+        grabbed, image = vs.read()
+        if not grabbed:
+            break
+    
     Height, Width, channels = image.shape
 
     scale = 0.00392
@@ -143,4 +151,7 @@ while True:
 
 # do a bit of cleanup
 cv2.destroyAllWindows()
-vs.stop()
+if(args.video ==0):
+        vs.stop()
+else:
+    vs.release()
