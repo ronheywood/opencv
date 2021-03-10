@@ -117,7 +117,7 @@ else:
     # grab the appropriate object tracker using our dictionary of
     # OpenCV object tracker objects
     tracker = OPENCV_OBJECT_TRACKERS[args.tracker]()
-    
+
 # initialize the bounding box coordinates of the object we are going
 # to track
 initBB = None
@@ -196,19 +196,6 @@ while True:
         writer.write(frame)
 
     key = cv2.waitKey(1) & 0xFF
-    # if the 's' key is selected, we are going to "select" a bounding
-    # box to track
-    # if key == ord("s"):
-    #     # select the bounding box of the object we want to track (make
-    #     # sure you press ENTER or SPACE after selecting the ROI)
-    #     initBB = cv2.selectROI("Frame", frame, fromCenter=False,
-    #         showCrosshair=True)
-    #     print(initBB)
-    #     # start OpenCV object tracker using the supplied bounding box
-    #     # coordinates, then start the FPS throughput estimator as well
-    #     tracker.init(frame, initBB)
-    #     fps = FPS().start()
-
     # if the `q` key was pressed, break from the loop
     if key == ord("q"):
         break
