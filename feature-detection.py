@@ -3,14 +3,33 @@ import cv2
 import sys
 import os
 import numpy as np
+import random
 sys.path.append(os.path.abspath('./modules/'))
 import detection
 
-image = cv2.imread('test-images/at-rest.png',1)
+images = [
+    'at-rest-teed-up.png',
+    'at-rest.png',
+    'ball-in-hand.jpg',
+    'close-up-outdoor--no-club-grass.png',
+    'close-up-outdoor-address.png',
+    'close-up-outdoor-grass-impact.png',
+    'driver-cimpression.png',
+    'driver-launch.png',
+    'high-spin-lob-wedge.png',
+    'low-loft-high-speed-iron.png',
+    'punch-low-launch.png',
+    'putter-launch.png']
+index = random.randint(0,len(images))
+sample = images[index] #close-up-outdoor--no-club-grass.png'
+image = cv2.imread(f'test-images/{sample}',1)
 args = { 'weights': 'yolov3.weights' ,'classes':'yolo-classes.txt','config':'yolo.cfg'}
 ball = detection.GolfBallDetection(image,args)
 if ball:
-    (x,y,w,h) = ball
+    (x,y,w,h) = ball    
+    #The boundaries are often not very accurate
+    #might be a good idea to look for the edges
+
     x_plus_w = x+w
     y_plus_h = y+h
 
@@ -27,6 +46,7 @@ if ball:
                         
     # you can generate kernels for embossing top as well
     gray = cv2.cvtColor(section, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (7, 7), 0)
     cv2.imshow("Gray",gray)
 
     embossdepth = np.ones((h, w), np.uint8) * 128
