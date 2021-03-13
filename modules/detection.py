@@ -22,7 +22,7 @@ def GolfBallDetection(image,args):
 
     net.setInput(blob)
 
-    outs = net.forward(get_output_layers(net))
+    outs = net.forward(_get_output_layers(net))
 
     class_ids = []
     confidences = []
@@ -49,8 +49,22 @@ def GolfBallDetection(image,args):
                 return(round(x), round(y), round(w), round(h))
     print("no golf ball detected")
     return None
-    
-def get_output_layers(net):
+
+def draw_boundaries_and_label(image,xy:tuple, wh:tuple, color, label):
+    thickness = 2
+    x,y = (xy)
+    w,h = (wh)
+    x_plus_w = x+w
+    y_plus_h = y+h
+    center_x = int(w/2)
+    center_y = int(h/2)
+
+    cv2.rectangle(image, (x,y), (x_plus_w,y_plus_h), color, thickness)
+    cv2.line(image,(x + center_x-10,y+center_y),( x + center_x+10,y+center_y),(255,0,0))
+    cv2.line(image,(x +center_x,y+center_y-10),(x+center_x,y+center_y+10),(255,0,0))
+    cv2.putText(image, label, (x-10,y_plus_h-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+def _get_output_layers(net):
     
     layer_names = net.getLayerNames()
     

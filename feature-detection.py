@@ -4,18 +4,20 @@ import sys
 import os
 import numpy as np
 sys.path.append(os.path.abspath('./modules/'))
-from detection import GolfBallDetection
+import detection
 
 image = cv2.imread('test-images/at-rest.png',1)
 args = { 'weights': 'yolov3.weights' ,'classes':'yolo-classes.txt','config':'yolo.cfg'}
-ball = GolfBallDetection(image,args)
+ball = detection.GolfBallDetection(image,args)
 if ball:
     (x,y,w,h) = ball
     x_plus_w = x+w
     y_plus_h = y+h
-    color = (0,255,0)
-    label = 'Ball'
-    section = image[y:y+h, x:x+w]
+
+    section = image.copy()[y:y+h, x:x+w]
+
+    detection.draw_boundaries_and_label(image,(x,y),(w,h),(0,255,0),'Ball')
+    
     cv2.imshow("Crop to ball",section)
         
     # generating the kernels
@@ -31,9 +33,9 @@ if ball:
     embossed = cv2.add(cv2.filter2D(gray, -1, kernel1),embossdepth) # emboss on bottom left side
     cv2.imshow("Embossed",embossed)
 
-    _, img_bin = cv2.threshold(cv2.cvtColor(section, cv2.COLOR_BGR2GRAY), 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    img_bin = 255 - img_bin
-    cv2.imshow("Binary",img_bin)
+    _, binary = cv2.threshold(cv2.cvtColor(section, cv2.COLOR_BGR2GRAY), 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    binary = 255 - binary
+    cv2.imshow("Binary",binary)
 
     edges = cv2.Canny(gray,100,200)
     cv2.imshow("Edges",edges)
@@ -52,9 +54,6 @@ if ball:
 
     cv2.drawContours(im2, dimples, -1, (0,255,0), 3)
     cv2.imshow("Contours",im2)
-
-    cv2.rectangle(image, (x,y), (x_plus_w,y_plus_h), color, 2)
-    cv2.putText(image, label, (x-10,y_plus_h-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
 cv2.imshow("Detecting features",image)
 
