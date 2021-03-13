@@ -2,7 +2,10 @@
 
 Experimenting with tracking a golf ball as it moves.
 
-Practical uses will require high speed photogrqaphy, but theoretically with suitable still images we should be able to determine launch angle, ball speed, spin and spin axis - which are the main components required for golf simulator software.
+Practical uses will require high speed photography, but theoretically with suitable still images we should be able to determine launch angle, ball speed, spin and spin axis - which are the main components required for golf simulator software. 
+
+I'm not anticipating trying to use live video for anything practical - I'll probably start with analyising two still frames - and to get round the high speed photography issue it'll probably be flash duration exposure
+(I think the GC2 uses this technique)
 
 # Setup
 
@@ -42,9 +45,6 @@ Hold up a golf ball to your webcam - you'll see the frame rate is poor while it 
 but then improves once it starts to track using the object tracker algorithm.
 
 I didn't investigate the issues around what to do if it loses sight of the golf ball - which happens if you move it quite fast, or obscure it.
-
-I'm not anticipating trying to use live video for anything practical - I'll probably start with analyising two still frames - and to get round the high speed photography issue it'll probably be flash duration exposure
-(I think the GC2 uses this technique)
 
 # Current work in progress 
 I'm investigating how to identify features of the golf ball so we can make decisions about how it's rotating - we'll need to do this to calculate spin and spin axis, as well as launch angle and ball speed
