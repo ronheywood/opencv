@@ -1,7 +1,10 @@
 import numpy as np
 import cv2
 
-def GolfBallDetection(image,args):
+golf_ball_detection_args = { 'weights': 'yolov3.weights' ,'classes':'yolo-classes.txt','config':'yolo.cfg'}
+def GolfBallDetection(image,args = None):
+    if args is None:
+        args = golf_ball_detection_args
     print("Searching for a golf ball...")
     Height, Width, channels = image.shape
 

@@ -3,10 +3,10 @@ import cv2
 import sys
 import os
 import numpy as np
-import random
 import argparse
 sys.path.append(os.path.abspath('./modules/'))
 import detection
+import helpers
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--imagepath", type=str, 
@@ -14,27 +14,12 @@ ap.add_argument("-i", "--imagepath", type=str,
     help="path to test image")
 args = ap.parse_args()
 if(args.imagepath is None):
-    images = [
-        'at-rest-teed-up.png',
-        'at-rest.png',
-        'ball-in-hand.jpg',
-        'close-up-outdoor--no-club-grass.png',
-        #'close-up-outdoor-address.png', #This one seems to be missed by the detection rules
-        'close-up-outdoor-grass-impact.png',
-        'driver-cimpression.png',
-        'driver-launch.png',
-        'high-spin-lob-wedge.png',
-        'low-loft-high-speed-iron.png',
-        'punch-low-launch.png',
-        'putter-launch.png']
-    index = random.randint(0,len(images))
-    image_path = f'test-images/{images[index]}' #close-up-outdoor--no-club-grass.png'
+    image_path = helpers.get_random_test_image()
 else:
     image_path = args.imagepath
 
 image = cv2.imread(image_path,1)
-args = { 'weights': 'yolov3.weights' ,'classes':'yolo-classes.txt','config':'yolo.cfg'}
-ball = detection.GolfBallDetection(image,args)
+ball = detection.GolfBallDetection(image)
 if ball:
     (x,y,w,h) = ball    
     #The boundaries are often not very accurate
