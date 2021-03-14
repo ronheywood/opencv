@@ -1,10 +1,12 @@
 import numpy as np
 import cv2
+import time
 
 golf_ball_detection_args = { 'weights': 'yolov3.weights' ,'classes':'yolo-classes.txt','config':'yolo.cfg'}
 def GolfBallDetection(image,args = None):
     if args is None:
         args = golf_ball_detection_args
+    start = time.time()
     print("Searching for a golf ball...")
     Height, Width, channels = image.shape
 
@@ -22,7 +24,7 @@ def GolfBallDetection(image,args = None):
     net = cv2.dnn.readNet(weights_file, config_file)
 
     blob = cv2.dnn.blobFromImage(image, scale, (416,416), (0,0,0), True, crop=False)
-
+    
     net.setInput(blob)
 
     outs = net.forward(_get_output_layers(net))
@@ -40,7 +42,8 @@ def GolfBallDetection(image,args = None):
             confidence = scores[class_id]
             
             if classes[class_id] == 'golf ball' and confidence > conf_threshold:
-                print('Found ' + classes[class_id] +  ' with confidence ' + str(confidence))
+                end = time.time()
+                print(f'[INFO] Found {classes[class_id]} with confidence {(str(confidence))} after {(end - start)} seconds')
                 center_x = int(detection[0] * Width)
                 center_y = int(detection[1] * Height)
                 w = int(detection[2] * Width)

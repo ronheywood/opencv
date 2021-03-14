@@ -13,5 +13,5 @@ def get_random_test_image():
             'low-loft-high-speed-iron.png',
             'punch-low-launch.png',
             'putter-launch.png']
-    index = random.randint(0,len(images))
-    return f'test-images/{images[index]}' #close-up-outdoor--no-club-grass.png'
+    index = random.randint(0,len(images)-1)
+    return f'test-images/{images[index]}'
