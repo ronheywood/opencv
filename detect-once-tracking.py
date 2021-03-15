@@ -1,17 +1,23 @@
 # import the necessary packages
 from imutils.video import VideoStream
 from imutils.video import FPS
+import sys
+import os
 import numpy as np
 import argparse
 import imutils
 import time
 import cv2
+sys.path.append(os.path.abspath('./modules/'))
+import detection
+import helpers
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str, 
     default = 0,
     help="path to input video file")
+ap.add_argument("-fv", "--flip_video", type=bool, default=False, help="Flip video orientation (if the camera is upside down)")
 ap.add_argument("-t", "--tracker", type=str, default="kcf",
     help="OpenCV object tracker type")
 ap.add_argument("-o", "--output", type=str, default=None,
@@ -29,64 +35,6 @@ ap.add_argument('-cf', '--confidence', required=False,
                 default = 0.5,
                 help = 'confidence threshold for object detection, defaults to 0.5')
 args = ap.parse_args()
-
-
-def get_output_layers(net):
-    
-    layer_names = net.getLayerNames()
-    
-    output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
-
-    return output_layers
-
-def golf_ball_detection(image):
-    print("Searching for a golf ball...")
-    Height, Width, channels = image.shape
-
-    scale = 0.00392
-
-    classes = None
-
-    weights_file = args.weights
-    config_file = args.config
-    with open(args.classes, 'r') as f:
-        classes = [line.strip() for line in f.readlines()]
-
-    COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
-
-    net = cv2.dnn.readNet(args.weights, args.config)
-
-    blob = cv2.dnn.blobFromImage(image, scale, (416,416), (0,0,0), True, crop=False)
-
-    net.setInput(blob)
-
-    outs = net.forward(get_output_layers(net))
-
-    class_ids = []
-    confidences = []
-    boxes = []
-    conf_threshold = 0.3
-    nms_threshold = 0.4
-
-    for out in outs:
-        for detection in out:
-            scores = detection[5:]
-            class_id = np.argmax(scores)
-            confidence = scores[class_id]
-            
-            if classes[class_id] == 'golf ball' and confidence > conf_threshold:
-                print('Found ' + classes[class_id] +  ' with confidence ' + str(confidence))
-                center_x = int(detection[0] * Width)
-                center_y = int(detection[1] * Height)
-                w = int(detection[2] * Width)
-                h = int(detection[3] * Height)
-                x = center_x - w / 2
-                y = center_y - h / 2
-                class_ids.append(class_id)
-                confidences.append(float(confidence))
-                return(round(x), round(y), round(w), round(h))
-    print("no golf ball detected")
-    return None
 
 # extract the OpenCV version info
 (major, minor) = cv2.__version__.split(".")[:2]
@@ -121,6 +69,7 @@ else:
 # initialize the bounding box coordinates of the object we are going
 # to track
 initBB = None
+rotateCode = None
 
 # if a video path was not supplied, grab the reference to the web cam
 if not args.video:
@@ -150,6 +99,9 @@ while True:
     # frame dimensions
     frame = imutils.resize(frame, width=800)
     (H, W) = frame.shape[:2]
+    # check if the frame needs to be rotated
+    if args.flip_video:
+        frame = cv2.flip(frame,-1)
 
     if(args.output and writer is None):
         # Define the codec and create VideoWriter object
@@ -182,7 +134,7 @@ while True:
             cv2.putText(frame, text, (10, H - ((i * 20) + 20)),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
     else:
-        initBB = golf_ball_detection(frame)
+        initBB = detection.GolfBallDetection(frame)
         if(initBB):
             # start OpenCV object tracker using the supplied bounding box
             # coordinates, then start the FPS throughput estimator as well
