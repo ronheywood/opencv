@@ -68,7 +68,7 @@ if ball:
     else:
         print ('No circles found')
         detection.draw_boundaries_and_label(output,(x,y),(w,h),(0,255,0),"No circle radius found")
-        cv2.imshow('Copy',output)
+        cv2.imshow('Failed to identify center of the ball',output)
 
 cv2.waitKey(0)    
 cv2.destroyAllWindows()
