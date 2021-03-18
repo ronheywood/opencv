@@ -26,6 +26,7 @@ cv2.imshow("Template", template)
 
 # loop over the images to find the template in
 for imagePath in glob.glob(args["images"] + "/*.jpg"):
+	print(f'Testing {imagePath} against template {args["template"]}')
 	# load the image, convert it to grayscale, and initialize the
 	# bookkeeping variable to keep track of the matched region
 	image = cv2.imread(imagePath)
@@ -69,3 +70,6 @@ for imagePath in glob.glob(args["images"] + "/*.jpg"):
 	cv2.rectangle(image, (startX, startY), (endX, endY), (255, 0, 0), 2)
 	cv2.imshow("Image", image)
 	cv2.waitKey(0)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
