@@ -6,6 +6,7 @@ from imutils import paths
 import argparse
 import imutils
 import cv2
+import os
 
 def sort_contours(cnts, method="left-to-right"):
 	# initialize the reverse flag and sort index
@@ -38,7 +39,9 @@ data = []
 labels = []
 
 # loop over the image paths in the training set
+i = 0
 for imagePath in paths.list_images('test-images/' + args["training"]):
+    i += 1
     # extract the manufacturer of the ball
     make = imagePath.replace('test-images/','').split('\\')[-2]
     print(f'[Info] Training manufacturer {make}')
@@ -58,6 +61,12 @@ for imagePath in paths.list_images('test-images/' + args["training"]):
 
     region = None
     region = image[y:y+h,x:x+w]
+    
+    directory = os.path.dirname(f'output/{make}/')
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    cv2.imwrite(f'{directory}/logo-{i}.jpg', region)
 
     #A golf balls logo is usually black
     gray = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
@@ -91,3 +100,8 @@ for imagePath in paths.list_images('test-images/' + args["training"]):
 print('All training images processed')
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
+print("[INFO] training classifier...")
+model = KNeighborsClassifier(n_neighbors=1)
+model.fit(data, labels)
+print("[INFO] evaluating...")
