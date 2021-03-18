@@ -32,7 +32,7 @@ You can follow some of the ideas I'm going for using the [project notes](https:/
 Currently I'm investigating Basic ball detection - I found the YOLO object detection algorithm is a good start, and while I'm currently assuming any "Sports ball" detected will be a golf ball, I suspect that a constraint that no other sports ball should be used, will be acceptable to users.
 
 ```
- py yolo-detection.py --image test-images/close-up-outdoor-address.png
+ py .\detect-ball-hough-circles.py
 ```
 
 I started to understand how to track a detected object's movement in subsequent frames using the detect-once-tracking script:
@@ -54,7 +54,7 @@ I'm investigating how to identify features of the golf ball so we can make decis
 
 Maybe we could do a UV map of the dimples, but it might be a good idea to start with tracking the logo, even though I can't assume it will always be visible in a functioning system...
 
-I'm Currently (2021-03-13) iterating over the feature-detection script:
+I'm Currently (2021-03-18) iterating over the feature-detection script:
 
 ```
 py feature-detection.py
