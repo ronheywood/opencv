@@ -61,4 +61,7 @@ py feature-detection.py
 ```
 
 This finds the ball, crops to it and runs a few transformations - I want to try and simplify it down to a few trackable features
-I'm also experimenting in `grab-cut.py` and `detect-round-things.py` to try and isolate the boundaries of the ball a little better
+
+To help zero in on the ball and to try and isolate features that will help
+keep track of movement and orientation I'm feeling pleased with the behaviour in `detect-ball-hough-circles.py` and I am thinking about trying to combine this with picking out a logo using `detect-ball-logo.py`
+
