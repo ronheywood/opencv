@@ -31,6 +31,8 @@ You can follow some of the ideas I'm going for using the [project notes](https:/
 
 Currently I'm investigating Basic ball detection - I found the YOLO object detection algorithm is a good start, and while I'm currently assuming any "Sports ball" detected will be a golf ball, I suspect that a constraint that no other sports ball should be used, will be acceptable to users.
 
+I was quite happy with the YOLO detection net I used against the images in the test-images folder, but I've since run it against some of the light box images from the specific manufactures ecommerce shots and it was not detecting them at all. It seems that it really only likes identifying objects in a real world environment
+
 ```
  py .\detect-ball-hough-circles.py
 ```
@@ -54,7 +56,7 @@ I'm investigating how to identify features of the golf ball so we can make decis
 
 Maybe we could do a UV map of the dimples, but it might be a good idea to start with tracking the logo, even though I can't assume it will always be visible in a functioning system...
 
-I'm Currently (2021-03-18) iterating over the feature-detection script:
+I'm Currently (2021-03-20) iterating over the feature-detection script:
 
 ```
 py feature-detection.py
