@@ -56,6 +56,14 @@ def GolfBallDetection(image,args = None):
     print("no golf ball detected")
     return None
 
+def _get_output_layers(net):
+    
+    layer_names = net.getLayerNames()
+    
+    output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+
+    return output_layers
+
 def draw_boundaries_and_label(image,xy:tuple, wh:tuple, color, label):
     thickness = 2
     x,y = (xy)
@@ -70,10 +78,30 @@ def draw_boundaries_and_label(image,xy:tuple, wh:tuple, color, label):
     cv2.line(image,(x +center_x,y+center_y-10),(x+center_x,y+center_y+10),(255,0,0))
     cv2.putText(image, label, (x-10,y_plus_h-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-def _get_output_layers(net):
+def get_ball_circle(image,x,y,w,h):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)[y:y+h, x:x+w]
+    gray = cv2.GaussianBlur(gray,(5,5),0)
     
-    layer_names = net.getLayerNames()
+    circles = None
+    start = time.time()
+    # detect circles in the image
+    circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1.9,minDist=w)
+    # ensure at least some circles were found
+    if circles is not None:
+        end = time.time()
+        print(f'[INFO] circle detection took {(end - start)} seconds')
+        # convert the (x, y) coordinates and radius of the circles to integers
+        circles = np.round(circles[0, :]).astype("int")
+        return circles[0]
     
-    output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+    return circles
 
-    return output_layers
+def draw_circle_around_ball(image,circle:tuple,offset:tuple):
+    (x,y) = offset
+    (cx, cy, r) = circle
+    cx +=x 
+    cy +=y
+    # draw the circle in the output image, then draw a rectangle
+    # corresponding to the center of the circle
+    cv2.circle(image, (cx, cy), r, (0, 255, 0), 4)
+    cv2.rectangle(image, (cx - 5, cy - 5), (cx + 5, cy + 5), (0, 128, 255), -1)
