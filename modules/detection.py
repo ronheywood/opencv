@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import imutils
 import time
 
 golf_ball_detection_args = { 'weights': 'yolov3.weights' ,'classes':'yolo-classes.txt','config':'yolo.cfg'}
@@ -9,8 +10,8 @@ def GolfBallDetection(image,args = None):
     start = time.time()
     print("Searching for a golf ball...")
     Height, Width, channels = image.shape
-
     scale = 0.00392
+    forced_size = (416,416)
 
     classes = None
 
@@ -23,7 +24,7 @@ def GolfBallDetection(image,args = None):
 
     net = cv2.dnn.readNet(weights_file, config_file)
 
-    blob = cv2.dnn.blobFromImage(image, scale, (416,416), (0,0,0), True, crop=False)
+    blob = cv2.dnn.blobFromImage(image, scale, forced_size, (0,0,0), True, crop=False)
     
     net.setInput(blob)
 
@@ -80,8 +81,8 @@ def draw_boundaries_and_label(image,xy:tuple, wh:tuple, color, label):
 
 def get_ball_circle(image,x,y,w,h):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)[y:y+h, x:x+w]
-    gray = cv2.GaussianBlur(gray,(5,5),0)
-    
+    gray = cv2.GaussianBlur(gray,(5,5),cv2.BORDER_CONSTANT)
+
     circles = None
     start = time.time()
     # detect circles in the image
