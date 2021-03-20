@@ -25,7 +25,12 @@ ball = detection.GolfBallDetection(image)
 if ball:
     (x,y,w,h) = ball    
     #The boundaries are often not very accurate
-    #might be a good idea to look for the edges
+    #so we can expand on them a little to make the mask better
+    #but it might be a good idea to look for the edges
+    x -= 10
+    y -= 10
+    w += 30
+    h += 40
 
     x_plus_w = x+w
     y_plus_h = y+h
