@@ -53,8 +53,52 @@ def GolfBallDetection(image,args = None):
                 y = center_y - h / 2
                 class_ids.append(class_id)
                 confidences.append(float(confidence))
+                #The boundaries are often not very accurate
+                #so we can expand on them a little to make the mask better
+                #but it might be a good idea to look for the edges
+                x -= 10
+                y -= 10
+                w += 30
+                h += 40
+
                 return(round(x), round(y), round(w), round(h))
-    print("no golf ball detected")
+
+    print("[INFO] YOLO detection failed to find a ball attempting HSV threshold detection")
+    hsv = _hsv_contour_detection(image)
+    if(hsv is not None):
+        return cv2.boundingRect(hsv)
+
+    return None
+
+def _hsv_contour_detection(image):
+    frame_to_thresh = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    min_hsv = (0, 0, 240)
+    max_hsv = (255, 50, 255)
+    mask = cv2.inRange(frame_to_thresh, min_hsv , max_hsv)
+    inverted = cv2.bitwise_not(mask)
+    
+    # find contours in the thresholded image
+    cnts = cv2.findContours(inverted.copy(), cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE)
+    # safe helper for opencv version compatibility
+    cnts = imutils.grab_contours(cnts)
+    # loop over the contours
+    for c in cnts:
+        # compute the center of the contour
+        M = cv2.moments(c)
+        if(M["m00"]==0):
+            continue
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+
+        perimeter = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.04 * perimeter, True)
+        if(len(approx) <6 ): 
+            continue #3 is a triangle, 4 is a rectangle, 5 is pentagon - not circles so can be ignored
+        
+        return c
+
+    print("[INFO] HSV detection failed to find a ball")
     return None
 
 def _get_output_layers(net):
@@ -80,22 +124,32 @@ def draw_boundaries_and_label(image,xy:tuple, wh:tuple, color, label):
     cv2.putText(image, label, (x-10,y_plus_h-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
 def get_ball_circle(image,x,y,w,h):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)[y:y+h, x:x+w]
-    gray = cv2.GaussianBlur(gray,(5,5),cv2.BORDER_CONSTANT)
-
     circles = None
     start = time.time()
-    # detect circles in the image
+    
+    hsv_circle = _hsv_contour_detection(image[y:y+h, x:x+w])
+    if hsv_circle is not None:
+        (xy,r) = cv2.minEnclosingCircle(hsv_circle)
+        (x,y) = xy
+        return (int(x),int(y),int(r))
+
+    end = time.time()
+    print(f'[INFO] HSV circle detection none found after {(end - start)} seconds - trying Hough circles')
+
+    start = time.time()
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)[y:y+h, x:x+w]
+    gray = cv2.GaussianBlur(gray,(5,5),cv2.BORDER_CONSTANT)
     circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1.9,minDist=w)
     # ensure at least some circles were found
     if circles is not None:
         end = time.time()
-        print(f'[INFO] circle detection took {(end - start)} seconds')
+        print(f'[INFO] Hough circle detection took {(end - start)} seconds')
         # convert the (x, y) coordinates and radius of the circles to integers
         circles = np.round(circles[0, :]).astype("int")
         return circles[0]
-    
-    return circles
+
+    print(f'[INFO] Hough circle detection none found after {(end - start)} seconds')    
+    return None
 
 def draw_circle_around_ball(image,circle:tuple,offset:tuple):
     (x,y) = offset
@@ -105,4 +159,4 @@ def draw_circle_around_ball(image,circle:tuple,offset:tuple):
     # draw the circle in the output image, then draw a rectangle
     # corresponding to the center of the circle
     cv2.circle(image, (cx, cy), r, (0, 255, 0), 4)
-    cv2.rectangle(image, (cx - 5, cy - 5), (cx + 5, cy + 5), (0, 128, 255), -1)
+    cv2.circle(image, (cx,cy), 5, (0, 0, 255), -1)

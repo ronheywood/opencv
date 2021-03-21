@@ -23,18 +23,11 @@ else:
 image = cv2.imread(image_path,1)
 ball = detection.GolfBallDetection(image)
 if ball:
-    (x,y,w,h) = ball    
-    #The boundaries are often not very accurate
-    #so we can expand on them a little to make the mask better
-    #but it might be a good idea to look for the edges
-    x -= 10
-    y -= 10
-    w += 30
-    h += 40
-
+    (x,y,w,h) = ball
     x_plus_w = x+w
     y_plus_h = y+h
 
+    
     section = image.copy()[y:y+h, x:x+w]
     
     cv2.imshow("Crop to ball",section)
@@ -85,7 +78,8 @@ if ball:
         detection.draw_circle_around_ball(image,circle,(x,y))
     else:
         detection.draw_boundaries_and_label(image,(x,y),(w,h),(0,255,0),'Ball')        
-
+else:
+    print('[INFO] Failed to find ball')
 cv2.imshow("Detecting features",image)
 
 cv2.waitKey(0)
