@@ -76,7 +76,11 @@ def _hsv_contour_detection(image):
     max_hsv = (255, 50, 255)
     mask = cv2.inRange(frame_to_thresh, min_hsv , max_hsv)
     inverted = cv2.bitwise_not(mask)
-    
+    #cv2.imshow("Inverted before erode",inverted)
+
+    element = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3)) 
+    dilated = cv2.dilate(inverted, element, iterations=1)
+
     # find contours in the thresholded image
     cnts = cv2.findContours(inverted.copy(), cv2.RETR_EXTERNAL,
         cv2.CHAIN_APPROX_SIMPLE)
@@ -93,9 +97,32 @@ def _hsv_contour_detection(image):
 
         perimeter = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * perimeter, True)
+
+        # compute the convex hull of the contour, then use the area of the
+        # original contour and the area of the convex hull to compute the
+        # solidity
+        area = cv2.contourArea(c)
+        hull = cv2.convexHull(c)
+        hullArea = cv2.contourArea(hull)
+        solidity = area / float(hullArea)
+
+        # visualize the original contours and the convex hull and initialize
+        # the name of the shape
+        # cv2.drawContours(image, [hull], -1, 255, -1)
+        # cv2.drawContours(image, [c], -1, (240, 0, 159), 3)
+        shape = ""
+
         if(len(approx) <6 ): 
             continue #3 is a triangle, 4 is a rectangle, 5 is pentagon - not circles so can be ignored
+
+        #A the countours bounding box aspect ratio should be close to 1.0
+        # artifacts like shadows mess this up so we can refine it
+        x,y,w,h = cv2.boundingRect(c)
+        ar = min(w,h)/max(w,h)
         
+        print(f'[INFO] found aspect ratio {ar}')
+        #if(ar < 0.9):
+            
         return c
 
     print("[INFO] HSV detection failed to find a ball")
