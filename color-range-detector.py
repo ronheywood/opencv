@@ -28,7 +28,7 @@ def setup_trackbars(range_filter):
 
 def get_arguments():
     ap = argparse.ArgumentParser()
-    ap.add_argument('-f', '--filter', required=True,
+    ap.add_argument('-f', '--filter', default= 'HSV',
                     help='Range filter. RGB or HSV')
     ap.add_argument('-i', '--image', required=False,
                     help='Path to the image')

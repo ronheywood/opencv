@@ -114,12 +114,15 @@ def _hsv_contour_detection(image):
 
         if(len(approx) <6 ): 
             continue #3 is a triangle, 4 is a rectangle, 5 is pentagon - not circles so can be ignored
-
+        
         #A the countours bounding box aspect ratio should be close to 1.0
         # artifacts like shadows mess this up so we can refine it
         x,y,w,h = cv2.boundingRect(c)
         ar = min(w,h)/max(w,h)
-        
+        # don't want any tiny things
+        if(w < int(image.shape[1]*0.25)):
+            continue
+
         print(f'[INFO] found aspect ratio {ar}')
         #if(ar < 0.9):
             

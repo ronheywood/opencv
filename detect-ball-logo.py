@@ -1,12 +1,14 @@
 # import the necessary packages
-from sklearn.neighbors import KNeighborsClassifier
-from skimage import exposure
-from skimage import feature
 from imutils import paths
 import argparse
 import imutils
 import cv2
+import sys
 import os
+sys.path.append(os.path.abspath('./modules/'))
+import detection
+import helpers
+
 
 def sort_contours(cnts, method="left-to-right"):
 	# initialize the reverse flag and sort index
@@ -29,79 +31,49 @@ def sort_contours(cnts, method="left-to-right"):
 
 # construct the argument parse and parse command line arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-d", "--training", required=False, default = 'bridgestone', help="Name of the manufacturer for the logos training dataset inside test-images")
-ap.add_argument("-t", "--test", required=False, help="Path to the test dataset")
-args = vars(ap.parse_args())
 
-# initialize the data matrix and labels
-print("[INFO] extracting features...")
-data = []
-labels = []
+ap.add_argument('-i', '--image', required=False,
+                    help='Path to the image')
 
-# loop over the image paths in the training set
-i = 0
-for imagePath in paths.list_images('test-images/' + args["training"]):
-    i += 1
-    # extract the manufacturer of the ball
-    make = imagePath.replace('test-images/','').split('\\')[-2]
-    print(f'[Info] Training manufacturer {make}')
-    # load the image, convert it to grayscale, and detect edges
-    #For now let us ask the user to draw the region where the logo is
-    image = cv2.imread(imagePath)
+args = ap.parse_args()
+if(args.image is None):
+    image_path = helpers.get_random_test_image()
+else:
+    image_path = args.image
+
+image = cv2.imread(image_path)
+
+ball = detection.GolfBallDetection(image)
+if ball is not None:
+    (x,y,w,h) = ball
+    cropped = image[y:y+h,x:x+w]
+    min_hsv = (0, 0, 0)
+    max_hsv = (152, 255, 154)
+    mask = cv2.inRange(cropped, min_hsv , max_hsv)
     
-    key = cv2.waitKey(1) & 0xFF
+    inverted = cv2.bitwise_not(mask)
     
-    # select the bounding box of the object we want to track (make
-    # sure you press ENTER or SPACE after selecting the ROI)
-    initBB = cv2.selectROI("Select the logo", image, fromCenter=False,
-        showCrosshair=True)
-    (x,y,w,h) =  initBB
-    if(w==0 or h==0): 
-        continue
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3)) 
+    dilated = cv2.erode(inverted.copy(),kernel,iterations=5)
 
-    region = None
-    region = image[y:y+h,x:x+w]
+    edges = cv2.Canny(dilated,100,200)
     
-    directory = os.path.dirname(f'output/{make}/')
-    if not os.path.exists(directory):
-        os.makedirs(directory)
 
-    cv2.imwrite(f'{directory}/logo-{i}.jpg', region)
-
-    #A golf balls logo is usually black
-    gray = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
-    #ret,thresh1 = cv2.threshold(region,127,255,cv2.THRESH_BINARY)
-    edged = imutils.auto_canny(gray)
-
-    # find contours in the edge map, keeping only the largest one which
-    # is presmumed to be the car logo
-    cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL,
+    cnts = cv2.findContours(edges, cv2.RETR_EXTERNAL,
         cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
-    c = max(cnts, key=cv2.contourArea)
-    
-    # extract the logo of the ball and resize it to a canonical width
-    # and height
-    (x, y, w, h) = cv2.boundingRect(c)
-    logo = gray[y:y + h, x:x + w]
-    logo = cv2.resize(logo, (200, 100))
 
-    cv2.destroyAllWindows()
-    cv2.imshow("Logo",edged)
-    
-    # extract Histogram of Oriented Gradients from the logo
-    H = feature.hog(logo, orientations=9, pixels_per_cell=(10, 10),
-        cells_per_block=(2, 2), transform_sqrt=True, block_norm="L1")
+    for c in cnts:
+        perimeter = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.04 * perimeter, True)
+        area = cv2.contourArea(c)
+        hull = cv2.convexHull(c)
 
-    # # update the data and labels
-    data.append(H)
-    labels.append(make)
+        if (len(approx) > 6):
+            cv2.drawContours(cropped, [c], -1, (240, 0, 159), 3)
+            break
 
-print('All training images processed')
+    cv2.imshow("Logo detected",cropped)
+
+cv2.imshow("Test image",image)
 cv2.waitKey(0)
-cv2.destroyAllWindows()
-
-print("[INFO] training classifier...")
-model = KNeighborsClassifier(n_neighbors=1)
-model.fit(data, labels)
-print("[INFO] evaluating...")
