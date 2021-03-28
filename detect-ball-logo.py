@@ -1,5 +1,6 @@
 # import the necessary packages
 from imutils import paths
+import numpy as np
 import argparse
 import imutils
 import cv2
@@ -47,18 +48,32 @@ ball = detection.GolfBallDetection(image)
 if ball is not None:
     (x,y,w,h) = ball
     cropped = image[y:y+h,x:x+w]
+    
     min_hsv = (0, 0, 0)
     max_hsv = (152, 255, 154)
-    mask = cv2.inRange(cropped, min_hsv , max_hsv)
-    
-    inverted = cv2.bitwise_not(mask)
-    
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3)) 
-    dilated = cv2.erode(inverted.copy(),kernel,iterations=5)
 
-    edges = cv2.Canny(dilated,100,200)
-    
+    (croppedHeight,croppedWidth,_) = cropped.shape
+    masked = cropped.copy()
 
+    ar = min(w,h)/max(w,h)
+    if(ar < 0.9):
+        #shadows mess up saliency - so we can try to refine the ball using a circle
+        circle = detection.get_ball_circle(cropped,0,0,croppedWidth,croppedHeight)
+
+        if(circle is not None):
+            (circleX,circleY,circleRadius) = circle
+            _, ball_mask = cv2.threshold(cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY), 20, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+            ball_mask = np.zeros_like(ball_mask)
+
+            cv2.circle(ball_mask,(circleX,circleY),circleRadius,(255,255,255),-1)
+            masked = cv2.bitwise_or(cropped,cropped,mask=ball_mask)
+
+    saliency = cv2.saliency.StaticSaliencySpectralResidual_create()
+    (success, saliencyMap) = saliency.computeSaliency(masked)
+
+    threshMap = cv2.threshold((saliencyMap * 255).astype("uint8"), 100, 200, cv2.THRESH_BINARY)[1]
+    edges = cv2.Canny(threshMap,100,200)
+    
     cnts = cv2.findContours(edges, cv2.RETR_EXTERNAL,
         cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
@@ -68,12 +83,9 @@ if ball is not None:
         approx = cv2.approxPolyDP(c, 0.04 * perimeter, True)
         area = cv2.contourArea(c)
         hull = cv2.convexHull(c)
-
-        if (len(approx) > 6):
-            cv2.drawContours(cropped, [c], -1, (240, 0, 159), 3)
-            break
+        
+        cv2.drawContours(cropped, [c], -1, (240, 0, 159), 3)
 
     cv2.imshow("Logo detected",cropped)
 
-cv2.imshow("Test image",image)
 cv2.waitKey(0)

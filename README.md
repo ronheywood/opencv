@@ -52,7 +52,7 @@ I'm investigating how to identify features of the golf ball so we can make decis
 
 Maybe we could do a UV map of the dimples, but it might be a good idea to start with tracking the logo, even though I can't assume it will always be visible in a functioning system...
 
-I'm Currently (2021-03-20) iterating over the feature-detection script:
+I'm Currently (2021-03-28) iterating over the feature-detection script:
 
 ```
 py feature-detection.py
